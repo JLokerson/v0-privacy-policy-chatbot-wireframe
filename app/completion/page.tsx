@@ -4,8 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { CheckCircle2, Clock, FlaskConical, Save } from "lucide-react"
-import { useEffect, useState } from "react"
+import { CheckCircle2, Clock, FlaskConical, Download } from "lucide-react"
 
 export default function CompletionPage() {
   const searchParams = useSearchParams()
@@ -15,8 +14,6 @@ export default function CompletionPage() {
   const taskTimesStr = searchParams.get("taskTimes")
   const taskTimes = taskTimesStr ? JSON.parse(taskTimesStr) : []
 
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
-
   const TASK_LABELS = [
     "Data Collection",
     "Business Use of Data",
@@ -25,39 +22,41 @@ export default function CompletionPage() {
     "Data Storage Duration",
   ]
 
-  useEffect(() => {
-    const saveResults = async () => {
-      setSaveStatus("saving")
-      try {
-        const response = await fetch("/api/save-results", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            version,
-            totalTime: Number(timeSpent),
-            taskTimes,
-            taskLabels: TASK_LABELS,
-            averageTimePerTask: taskTimes.length > 0 ? Math.round(Number(timeSpent) / taskTimes.length) : 0,
-          }),
-        })
+  const downloadCSV = () => {
+    const timestamp = new Date().toISOString()
+    const csvContent = [
+      [
+        "Timestamp",
+        "Version",
+        "Total Time (s)",
+        "Task 1 (s)",
+        "Task 2 (s)",
+        "Task 3 (s)",
+        "Task 4 (s)",
+        "Task 5 (s)",
+        "Avg Time Per Task (s)",
+      ],
+      [
+        timestamp,
+        version || "",
+        timeSpent || "",
+        ...taskTimes.map((t: number) => t.toString()),
+        taskTimes.length > 0 ? Math.round(Number(timeSpent) / taskTimes.length).toString() : "0",
+      ],
+    ]
+      .map((row) => row.join(","))
+      .join("\n")
 
-        if (response.ok) {
-          setSaveStatus("saved")
-        } else {
-          setSaveStatus("error")
-        }
-      } catch (error) {
-        console.error("Error saving results:", error)
-        setSaveStatus("error")
-      }
-    }
-
-    if (version && timeSpent) {
-      saveResults()
-    }
-  }, [version, timeSpent, taskTimes])
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `privacy-policy-experiment-${version}-${Date.now()}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -72,20 +71,6 @@ export default function CompletionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {saveStatus === "saved" && (
-            <div className="bg-green-50 border border-green-200 p-3 rounded-lg flex items-center gap-2">
-              <Save className="w-4 h-4 text-green-600" />
-              <p className="text-sm text-green-800 font-medium">Results saved to experiment-data/results.json</p>
-            </div>
-          )}
-          {saveStatus === "error" && (
-            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-              <p className="text-sm text-red-800 font-medium">
-                Failed to save results. Please note the timing data manually.
-              </p>
-            </div>
-          )}
-
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
@@ -147,6 +132,11 @@ export default function CompletionPage() {
               </CardContent>
             </Card>
           )}
+
+          <Button onClick={downloadCSV} className="w-full" size="lg">
+            <Download className="w-4 h-4 mr-2" />
+            Download Timing Data (CSV)
+          </Button>
 
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <h3 className="font-semibold mb-2 text-blue-900">Next Step: External Quiz</h3>
