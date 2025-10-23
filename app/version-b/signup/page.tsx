@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { privacyPolicyTikTok } from "@/lib/privacy-policy-tiktok"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, MessageCircle, X, Send, CheckCircle2, Circle } from "lucide-react"
@@ -19,48 +18,33 @@ import { Badge } from "@/components/ui/badge"
 const TASKS = [
   {
     id: 1,
-    question: "Does PhotoShare collect your name and biometric data?",
+    topic: "Data Collection",
+    instruction: "Read about what personal information PhotoShare collects, including name and biometric data.",
     hint: "Try asking the AI assistant about data collection",
-    options: [
-      "Yes, both name and biometric data",
-      "Only name, not biometric data",
-      "Only biometric data, not name",
-      "No, neither",
-    ],
   },
   {
     id: 2,
-    question: "Can your data be used to improve their business?",
+    topic: "Business Use of Data",
+    instruction: "Understand how PhotoShare uses your data to improve their business and services.",
     hint: "Ask the AI about business use of data",
-    options: [
-      "Yes, explicitly stated",
-      "Yes, but only with consent",
-      "No, not mentioned",
-      "Only for specific purposes",
-    ],
   },
   {
     id: 3,
-    question: "Can you delete your data?",
+    topic: "Data Deletion Rights",
+    instruction: "Learn about your ability to delete your data and how to do it.",
     hint: "Ask about data deletion rights",
-    options: ["Yes, completely", "Yes, but some data may remain", "No", "Only after account deletion"],
   },
   {
     id: 4,
-    question: "Can your data be sent to third parties?",
+    topic: "Third-Party Data Sharing",
+    instruction: "Understand if and how your data can be sent to third parties.",
     hint: "Ask about data sharing with third parties",
-    options: [
-      "Yes, it can be shared with third parties",
-      "No, never shared",
-      "Only with explicit consent",
-      "Only anonymized data",
-    ],
   },
   {
     id: 5,
-    question: "How long is your data stored?",
+    topic: "Data Storage Duration",
+    instruction: "Learn how long PhotoShare stores your data.",
     hint: "Ask about data retention periods",
-    options: ["Specific time period mentioned", "As long as account is active", "Indefinitely", "Varies by data type"],
   },
 ]
 
@@ -76,12 +60,12 @@ export default function VersionBSignup() {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
   const [taskStartTimes, setTaskStartTimes] = useState<number[]>([Date.now()])
   const [taskCompletionTimes, setTaskCompletionTimes] = useState<number[]>([])
-  const [taskAnswers, setTaskAnswers] = useState<string[]>(Array(TASKS.length).fill(""))
 
   const [chatOpen, setChatOpen] = useState(false)
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([])
   const [inputMessage, setInputMessage] = useState("")
   const chatScrollRef = useRef<HTMLDivElement>(null)
+  const finalAgreementRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMessages([])
@@ -94,6 +78,19 @@ export default function VersionBSignup() {
     setMessages([...messages, { role: "user", content: inputMessage }])
     setInputMessage("")
   }
+
+  const isAllTasksComplete = currentTaskIndex === TASKS.length - 1 && taskCompletionTimes.length === TASKS.length
+
+  useEffect(() => {
+    if (isAllTasksComplete) {
+      setTimeout(() => {
+        const finalSection = finalAgreementRef.current
+        if (finalSection) {
+          finalSection.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
+      }, 100)
+    }
+  }, [isAllTasksComplete])
 
   const handleTaskComplete = () => {
     const now = Date.now()
@@ -116,9 +113,7 @@ export default function VersionBSignup() {
 
     const totalTime = taskTimes.reduce((sum, time) => sum + time, 0)
 
-    router.push(
-      `/completion?version=B&time=${totalTime}&taskTimes=${JSON.stringify(taskTimes)}&answers=${JSON.stringify(taskAnswers)}`,
-    )
+    router.push(`/completion?version=B&time=${totalTime}&taskTimes=${JSON.stringify(taskTimes)}`)
   }
 
   const suggestedQuestions = [
@@ -131,7 +126,6 @@ export default function VersionBSignup() {
   ]
 
   const currentTask = TASKS[currentTaskIndex]
-  const isAllTasksComplete = currentTaskIndex === TASKS.length - 1 && taskCompletionTimes.length === TASKS.length
   const isFormValid =
     formData.username && formData.email && formData.password && formData.agreedToPolicy && isAllTasksComplete
 
@@ -148,7 +142,9 @@ export default function VersionBSignup() {
             Version B - Experimental (AI Assistant)
           </div>
           <h1 className="text-3xl font-bold">Create Your Account</h1>
-          <p className="text-muted-foreground mt-2">Complete all tasks using the privacy policy and AI assistant</p>
+          <p className="text-muted-foreground mt-2">
+            Read each section of the privacy policy or use the AI assistant. Click Next when you understand it.
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -184,12 +180,9 @@ export default function VersionBSignup() {
                       <p
                         className={`text-sm font-medium ${index === currentTaskIndex ? "text-foreground" : "text-muted-foreground"}`}
                       >
-                        Task {task.id}
+                        Task {task.id}: {task.topic}
                       </p>
-                      <p className="text-sm mt-1">{task.question}</p>
-                      {index === currentTaskIndex && (
-                        <p className="text-xs text-muted-foreground mt-2 italic">{task.hint}</p>
-                      )}
+                      <p className="text-xs mt-1 text-muted-foreground">{task.instruction}</p>
                     </div>
                   </div>
                 </div>
@@ -247,43 +240,25 @@ export default function VersionBSignup() {
             </CardContent>
           </Card>
 
-          {/* Privacy Policy and Task Answer */}
+          {/* Privacy Policy and Task */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Current Task Card */}
             <Card className="border-primary">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Current Task</CardTitle>
-                    <CardDescription className="mt-1">{currentTask.question}</CardDescription>
+                    <CardTitle>Current Task: {currentTask.topic}</CardTitle>
+                    <CardDescription className="mt-1">{currentTask.instruction}</CardDescription>
                   </div>
                   <Badge variant="outline">Task {currentTask.id}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <Label>Select your answer:</Label>
-                  <RadioGroup
-                    value={taskAnswers[currentTaskIndex]}
-                    onValueChange={(value) => {
-                      const newAnswers = [...taskAnswers]
-                      newAnswers[currentTaskIndex] = value
-                      setTaskAnswers(newAnswers)
-                    }}
-                  >
-                    {currentTask.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option} id={`option-${idx}`} />
-                        <Label htmlFor={`option-${idx}`} className="font-normal cursor-pointer">
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
+                  <strong>Hint:</strong> {currentTask.hint}
                 </div>
 
-                <Button onClick={handleTaskComplete} disabled={!taskAnswers[currentTaskIndex]} className="w-full">
-                  {currentTaskIndex === TASKS.length - 1 ? "Complete Final Task" : "Complete Task & Continue"}
+                <Button onClick={handleTaskComplete} className="w-full">
+                  {currentTaskIndex === TASKS.length - 1 ? "Complete Final Task" : "Next - I understand this section"}
                 </Button>
               </CardContent>
             </Card>
@@ -309,10 +284,13 @@ export default function VersionBSignup() {
 
             {/* Final Agreement */}
             {isAllTasksComplete && (
-              <Card className="border-green-500">
+              <Card className="border-green-500" ref={finalAgreementRef}>
                 <CardHeader>
                   <CardTitle className="text-green-700">All Tasks Complete!</CardTitle>
-                  <CardDescription>Review your information and create your account</CardDescription>
+                  <CardDescription>
+                    You will be directed to an external quiz to test your understanding. Create your account to
+                    continue.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start space-x-2">
@@ -327,7 +305,7 @@ export default function VersionBSignup() {
                   </div>
 
                   <Button onClick={handleSubmit} className="w-full" disabled={!isFormValid} size="lg">
-                    Create Account
+                    Create Account & Continue to Quiz
                   </Button>
                 </CardContent>
               </Card>

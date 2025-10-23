@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { privacyPolicyInstagram } from "@/lib/privacy-policy-instagram"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, CheckCircle2, Circle } from "lucide-react"
@@ -19,48 +18,33 @@ import { Badge } from "@/components/ui/badge"
 const TASKS = [
   {
     id: 1,
-    question: "Does PhotoShare collect your name and biometric data?",
-    hint: "Look in the 'Information We Collect' section",
-    options: [
-      "Yes, both name and biometric data",
-      "Only name, not biometric data",
-      "Only biometric data, not name",
-      "No, neither",
-    ],
+    topic: "Data Collection",
+    instruction: "Read about what personal information PhotoShare collects, including name and biometric data.",
+    hint: "Look in the 'What kinds of information do we collect?' section",
   },
   {
     id: 2,
-    question: "Can your data be used to improve their business?",
-    hint: "Check the 'How We Use Your Information' section",
-    options: [
-      "Yes, explicitly stated",
-      "Yes, but only with consent",
-      "No, not mentioned",
-      "Only for specific purposes",
-    ],
+    topic: "Business Use of Data",
+    instruction: "Understand how PhotoShare uses your data to improve their business and services.",
+    hint: "Check the 'How do we use this information?' section",
   },
   {
     id: 3,
-    question: "Can you delete your data?",
-    hint: "Review the 'Your Choices About Your Information' section",
-    options: ["Yes, completely", "Yes, but some data may remain", "No", "Only after account deletion"],
+    topic: "Data Deletion Rights",
+    instruction: "Learn about your ability to delete your data and how to do it.",
+    hint: "Review the 'How can I manage or delete information about me?' section",
   },
   {
     id: 4,
-    question: "Can your data be sent to third parties?",
-    hint: "Look at the 'Sharing of Your Information' section",
-    options: [
-      "Yes, it can be shared with third parties",
-      "No, never shared",
-      "Only with explicit consent",
-      "Only anonymized data",
-    ],
+    topic: "Third-Party Data Sharing",
+    instruction: "Understand if and how your data can be sent to third parties.",
+    hint: "Look at the 'How is this information shared?' section",
   },
   {
     id: 5,
-    question: "How long is your data stored?",
-    hint: "Find information in 'How We Store Your Information'",
-    options: ["Specific time period mentioned", "As long as account is active", "Indefinitely", "Varies by data type"],
+    topic: "Data Storage Duration",
+    instruction: "Learn how long PhotoShare stores your data.",
+    hint: "Find information in 'How can I manage or delete information about me?'",
   },
 ]
 
@@ -76,7 +60,6 @@ export default function VersionASignup() {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
   const [taskStartTimes, setTaskStartTimes] = useState<number[]>([Date.now()])
   const [taskCompletionTimes, setTaskCompletionTimes] = useState<number[]>([])
-  const [taskAnswers, setTaskAnswers] = useState<string[]>(Array(TASKS.length).fill(""))
 
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -99,6 +82,19 @@ export default function VersionASignup() {
     return () => scrollElement.removeEventListener("scroll", handleScroll)
   }, [hasScrolledToBottom])
 
+  const isAllTasksComplete = currentTaskIndex === TASKS.length - 1 && taskCompletionTimes.length === TASKS.length
+
+  useEffect(() => {
+    if (isAllTasksComplete) {
+      setTimeout(() => {
+        const finalSection = document.querySelector("[data-final-agreement]")
+        if (finalSection) {
+          finalSection.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
+      }, 100)
+    }
+  }, [isAllTasksComplete])
+
   const handleTaskComplete = () => {
     const now = Date.now()
     const newCompletionTimes = [...taskCompletionTimes, now]
@@ -109,7 +105,6 @@ export default function VersionASignup() {
       setTaskStartTimes([...taskStartTimes, now])
       setHasScrolledToBottom(false)
 
-      // Scroll back to top for next task
       const scrollElement = scrollAreaRef.current?.querySelector("[data-radix-scroll-area-viewport]")
       if (scrollElement) {
         scrollElement.scrollTop = 0
@@ -127,13 +122,10 @@ export default function VersionASignup() {
 
     const totalTime = taskTimes.reduce((sum, time) => sum + time, 0)
 
-    router.push(
-      `/completion?version=A&time=${totalTime}&taskTimes=${JSON.stringify(taskTimes)}&answers=${JSON.stringify(taskAnswers)}`,
-    )
+    router.push(`/completion?version=A&time=${totalTime}&taskTimes=${JSON.stringify(taskTimes)}`)
   }
 
   const currentTask = TASKS[currentTaskIndex]
-  const isAllTasksComplete = currentTaskIndex === TASKS.length - 1 && taskCompletionTimes.length === TASKS.length
   const isFormValid =
     formData.username && formData.email && formData.password && formData.agreedToPolicy && isAllTasksComplete
 
@@ -150,7 +142,9 @@ export default function VersionASignup() {
             Version A - Control (No AI Assistant)
           </div>
           <h1 className="text-3xl font-bold">Create Your Account</h1>
-          <p className="text-muted-foreground mt-2">Complete all tasks by finding answers in the privacy policy</p>
+          <p className="text-muted-foreground mt-2">
+            Read each section of the privacy policy. Click Next when you understand it.
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -186,12 +180,9 @@ export default function VersionASignup() {
                       <p
                         className={`text-sm font-medium ${index === currentTaskIndex ? "text-foreground" : "text-muted-foreground"}`}
                       >
-                        Task {task.id}
+                        Task {task.id}: {task.topic}
                       </p>
-                      <p className="text-sm mt-1">{task.question}</p>
-                      {index === currentTaskIndex && (
-                        <p className="text-xs text-muted-foreground mt-2 italic">{task.hint}</p>
-                      )}
+                      <p className="text-xs mt-1 text-muted-foreground">{task.instruction}</p>
                     </div>
                   </div>
                 </div>
@@ -249,53 +240,31 @@ export default function VersionASignup() {
             </CardContent>
           </Card>
 
-          {/* Privacy Policy and Task Answer */}
+          {/* Privacy Policy and Task */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Current Task Card */}
             <Card className="border-primary">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Current Task</CardTitle>
-                    <CardDescription className="mt-1">{currentTask.question}</CardDescription>
+                    <CardTitle>Current Task: {currentTask.topic}</CardTitle>
+                    <CardDescription className="mt-1">{currentTask.instruction}</CardDescription>
                   </div>
                   <Badge variant="outline">Task {currentTask.id}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <Label>Select your answer:</Label>
-                  <RadioGroup
-                    value={taskAnswers[currentTaskIndex]}
-                    onValueChange={(value) => {
-                      const newAnswers = [...taskAnswers]
-                      newAnswers[currentTaskIndex] = value
-                      setTaskAnswers(newAnswers)
-                    }}
-                  >
-                    {currentTask.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option} id={`option-${idx}`} />
-                        <Label htmlFor={`option-${idx}`} className="font-normal cursor-pointer">
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
+                  <strong>Hint:</strong> {currentTask.hint}
                 </div>
 
                 {!hasScrolledToBottom && (
                   <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800">
-                    Scroll through the entire Privacy Policy below to unlock the "Complete Task" button
+                    Scroll through the entire Privacy Policy below to unlock the "Next" button
                   </div>
                 )}
 
-                <Button
-                  onClick={handleTaskComplete}
-                  disabled={!hasScrolledToBottom || !taskAnswers[currentTaskIndex]}
-                  className="w-full"
-                >
-                  {currentTaskIndex === TASKS.length - 1 ? "Complete Final Task" : "Complete Task & Continue"}
+                <Button onClick={handleTaskComplete} disabled={!hasScrolledToBottom} className="w-full">
+                  {currentTaskIndex === TASKS.length - 1 ? "Complete Final Task" : "Next - I understand this section"}
                 </Button>
               </CardContent>
             </Card>
@@ -319,10 +288,13 @@ export default function VersionASignup() {
 
             {/* Final Agreement */}
             {isAllTasksComplete && (
-              <Card className="border-green-500">
+              <Card className="border-green-500" data-final-agreement>
                 <CardHeader>
                   <CardTitle className="text-green-700">All Tasks Complete!</CardTitle>
-                  <CardDescription>Review your information and create your account</CardDescription>
+                  <CardDescription>
+                    You will be directed to an external quiz to test your understanding. Create your account to
+                    continue.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start space-x-2">
@@ -337,7 +309,7 @@ export default function VersionASignup() {
                   </div>
 
                   <Button onClick={handleSubmit} className="w-full" disabled={!isFormValid} size="lg">
-                    Create Account
+                    Create Account & Continue to Quiz
                   </Button>
                 </CardContent>
               </Card>
