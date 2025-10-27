@@ -44,10 +44,7 @@ export default function Home() {
           <div className="bg-muted p-4 rounded-lg">
             <h3 className="font-semibold mb-2">Experiment Instructions:</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>
-                Each version uses a different privacy policy (Version A: Meta/Instagram policy, Version B: TikTok
-                policy)
-              </li>
+              <li>Each version uses a different privacy policy</li>
               <li>Version A: Traditional scrollable policy text without assistance</li>
               <li>Version B: AI chatbot assistant to help understand the policy</li>
               <li>Complete 5 tasks by reading the policy and clicking "Next" when you understand each section</li>
