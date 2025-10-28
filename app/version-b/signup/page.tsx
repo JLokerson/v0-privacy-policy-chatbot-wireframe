@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { privacyPolicyTikTok } from "@/lib/privacy-policy-tiktok"
+import { privacyPolicyTikTok } from "@/lib/privacy-policy-tiktok" 
 import { useRouter } from "next/navigation"
 import { ArrowLeft, MessageCircle, X, Send, CheckCircle2, Circle } from "lucide-react"
 import Link from "next/link"
@@ -48,6 +48,115 @@ const TASKS = [
   },
 ]
 
+// SIMULATE AI RESPONSE
+const getAssistantResponse = (query: string): string => {
+  const lowerQuery = query.toLowerCase()
+
+  if (lowerQuery.includes("what personal information does photoshare collect") || lowerQuery.includes("data collection")) {
+    return `PhotoShare collects an extensive amount of data, which can be summarized in three main categories:
+
+1. Information You and Others Provide
+This is the content and data generated directly on the platform:
+
+Content and Communications: Photos, videos, messages, and the metadata about them (like location and date created).
+
+Special Protection Data: Sensitive information you choose to provide, such as religious or political views and health data.
+
+Network Data: Information about your connections, groups, and any contact information (like an address book or call/SMS logs) you sync.
+
+Usage Data: The types of content you view, the features you use, and the time/frequency of your activities.
+
+Financial Data: Payment information (card details) and billing/shipping details for transactions.
+
+2. Device Information
+The company collects data from the computers, phones, and other web-connected devices you use:
+
+Device Attributes: Operating system, hardware, battery level, signal strength, and browser type.
+
+Identifiers and Signals: Unique device IDs, IP address, mobile phone number, Bluetooth signals, and information on nearby Wi-Fi.
+
+Location and Settings: GPS location and data you allow access to through device settings (e.g., camera, photos).
+
+3. Information from Partners
+PhotoShare also receives data about your activities off their products:
+
+Third-Party Activity: Data from advertisers, app developers, and publishers about the websites you visit, purchases you make, and the ads you see on other services.
+`
+  }
+  if (lowerQuery.includes("does photoshare collect biometric data")) {
+    return `The PhotoShare Data Policy does not explicitly mention "biometric data."
+
+However, the company's stated practices involve collecting and automatically processing user content and communications to "analyze context and what's in them." This processing, particularly related to photos, videos, and camera features (like suggesting masks/filters), is generally understood to include facial recognition and the extraction of unique facial identifiers, which is the definition of biometric data under many laws.`
+  }
+  if (lowerQuery.includes("used to improve their business") || lowerQuery.includes("business use of data")) {
+    return `Yes, PhotoShare uses your data to improve its business, products, and services.
+
+This usage includes:
+
+Personalization and Improvement: Using your data to personalize your experience, make content suggestions, and for product research and development.
+
+Monetization/Ads: Using your data (interests, actions, connections) to select and personalize ads and other sponsored content.
+
+Measurement: Providing reports and analytics to advertisers and partners to help them measure the effectiveness of their ads and services.
+
+Security and Integrity: Using data to verify accounts, combat harmful conduct, and maintain the integrity of the platform.
+
+Global Operations: Sharing data with third-party partners who help them provide and improve their Products and grow their businesses, allowing them to "provide free services to people around the world.`
+  }
+  if (lowerQuery.includes("can i delete my data") || lowerQuery.includes("data deletion rights")) {
+    return `Yes, you can delete your data by deleting your account through your PhotoShare Settings.
+
+The policy confirms:
+
+You can access, rectify, port, and erase your data in the PhotoShare Settings.
+
+Deleting your account permanently deletes things you've posted, like photos and status updates.
+
+A critical exception: Information that others have shared about you (e.g., a photo another user posted) is not deleted when you delete your account.`
+  }
+  if (lowerQuery.includes("can my data be sent to third parties") || lowerQuery.includes("data sharing with third parties")) {
+    return `Yes, your data can be sent to third parties.
+
+Your data is shared in two main ways:
+
+When You or Others Share:
+
+With the people and accounts you communicate with.
+
+With third-party apps, websites, and integrations you use (e.g., games, Share buttons).
+
+When others reshare your content outside the platform.
+
+With Business Partners:
+
+With vendors and service providers (e.g., those managing infrastructure or payments).
+
+With advertisers and measurement partners (mostly aggregated and non-personally identifying data, unless you permit otherwise).
+
+With researchers, academics, and law enforcement (in response to legal requests).`
+  }
+  if (lowerQuery.includes("how long is my data stored") || lowerQuery.includes("data retention periods")) {
+    return `PhotoShare's data storage duration is determined on a case-by-case basis until the data is no longer necessary to provide their services, or until your account is deleted, whichever comes first.
+
+The general principle is: They store data as long as needed for the purposes they collected it.
+
+The policy provides a few specific examples:
+
+Search History: A log of a search query is deleted after 6 months.
+
+Government-Issued ID: A copy of an ID submitted for account verification is deleted 30 days after review.
+
+Disabled Accounts: Information from accounts disabled for terms violations is retained for at least a year to prevent repeat abuse.
+
+When you delete your account, they delete the content you posted (photos, updates), but they do not delete content others have shared about you.`
+  }
+
+  // Fallback for general questions or unlisted suggested questions
+  return "I'm the Privacy Policy Assistant. I can only answer questions related to the current PhotoShare Privacy Policy. Please try asking one of the suggested questions."
+}
+// ---------------------------------------------
+
+
 export default function VersionBSignup() {
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -71,15 +180,33 @@ export default function VersionBSignup() {
     setMessages([])
   }, [currentTaskIndex])
 
+  // --- MODIFIED handleSendMessage ---
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim()) return
+    const userMessage = inputMessage.trim()
+    if (!userMessage) return
 
-    setMessages([...messages, { role: "user", content: inputMessage }])
+    // 1. Add user message
+    const newMessages = [...messages, { role: "user" as const, content: userMessage }]
+    setMessages(newMessages)
     setInputMessage("")
+
+    // 2. Simulate assistant response after a short delay
+    setTimeout(() => {
+      const assistantResponse = getAssistantResponse(userMessage)
+      setMessages((prevMessages) => [...prevMessages, { role: "assistant" as const, content: assistantResponse }])
+    }, 500)
   }
+  // ----------------------------------
 
   const isAllTasksComplete = currentTaskIndex === TASKS.length - 1 && taskCompletionTimes.length === TASKS.length
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    }
+  }, [messages])
+
 
   useEffect(() => {
     if (isAllTasksComplete) {
@@ -264,7 +391,7 @@ export default function VersionBSignup() {
             </Card>
 
             {/* Privacy Policy */}
-            <Card>
+	    <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   PhotoShare Privacy Policy
@@ -340,7 +467,7 @@ export default function VersionBSignup() {
 
           <CardContent className="flex-1 flex flex-col p-0">
             {/* Messages Area */}
-            <ScrollArea ref={chatScrollRef} className="flex-1 p-4">
+            <ScrollArea ref={chatScrollRef} className="h-[400px] w-full rounded-md border p-4">
               {messages.length === 0 ? (
                 <div className="space-y-4">
                   <div className="bg-muted p-3 rounded-lg">
@@ -354,7 +481,14 @@ export default function VersionBSignup() {
                       <button
                         key={idx}
                         onClick={() => {
-                          setMessages([{ role: "user", content: question }])
+                          // Simulate user clicking a suggested question
+                          const initialMessages = [{ role: "user" as const, content: question }]
+                          setMessages(initialMessages)
+                           // Simulate assistant response after a short delay
+                          setTimeout(() => {
+                            const assistantResponse = getAssistantResponse(question)
+                            setMessages((prevMessages) => [...initialMessages, { role: "assistant" as const, content: assistantResponse }])
+                          }, 500)
                         }}
                         className="w-full text-left text-sm p-2 rounded-md border hover:bg-muted transition-colors"
                       >
@@ -364,23 +498,28 @@ export default function VersionBSignup() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {messages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-lg ${
-                        msg.role === "user" ? "bg-primary text-primary-foreground ml-8" : "bg-muted mr-8"
-                      }`}
-                    >
-                      <p className="text-sm">{msg.content}</p>
-                    </div>
-                  ))}
-                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                    <p className="text-xs text-yellow-800">
-                      <strong>Researcher Note:</strong> Respond as the AI assistant based on the privacy policy content
-                    </p>
-                  </div>
-                </div>
+	      <div className="space-y-4">
+		  {messages.map((msg, idx) => (
+		    <div
+		      key={idx}
+		      className={`p-3 rounded-lg ${
+			msg.role === "user" ? "bg-primary text-primary-foreground ml-8" : "bg-muted mr-8"
+		      }`}
+		    >
+		      {/* The Fix: Add whitespace-pre-wrap class to the <p> element.
+			This tells the browser to honor newlines (\n) and tabs, but also wrap the text when it reaches the end of the line.
+		      */}
+		      <p className="text-sm whitespace-pre-wrap">
+			{msg.content}
+		      </p>
+		    </div>
+		  ))}
+		  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+		    <p className="text-xs text-yellow-800">
+		      <strong>Researcher Note:</strong> Respond as the AI assistant based on the privacy policy content
+		    </p>
+		  </div>
+              </div>
               )}
             </ScrollArea>
 
